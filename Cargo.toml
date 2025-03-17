@@ -1,0 +1,12 @@
+[package]
+name = "astrafoto-worker"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+axum = "0.8.1"
+tokio = { version = "1.44.1", features = ["full"] }
+serde = { version = "1", features = ["derive"] }
+chrono = "0.4"
+reqwest = "0.12"
+dotenvy = "0.15.7"
