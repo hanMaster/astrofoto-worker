@@ -5,6 +5,7 @@ use serde::{Deserialize, Serialize};
 use tokio::fs;
 use tokio::fs::File;
 use tokio::io::AsyncWriteExt;
+use crate::stuff::mailer::send_email;
 use crate::stuff::state::AppState;
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
@@ -48,5 +49,12 @@ async fn download_files(files: Vec<String>, dir: String) -> crate::Result<()> {
         file.sync_all().await?;
     }
     println!("All files saved to {}", dir);
+    let res = send_email("Тестовое письмо".to_string()).await;
+    match res {
+        Ok(_) => {}
+        Err(e) => {
+            eprintln!("Error sending email: {}", e);
+        }
+    }
     Ok(())
 }

@@ -1,4 +1,5 @@
 use std::fmt::{Display, Formatter};
+use async_mailer::SmtpMailerError;
 use axum::response::{IntoResponse, Response};
 
 pub type Result<T> = std::result::Result<T, Error>;
@@ -10,9 +11,23 @@ pub enum Error {
     ConfigWrongFormat(&'static str),
     Io(std::io::Error),
     Request(reqwest::Error),
+    EmailSendFailed(async_mailer::mail_send::Error),
+    SMTPFailed(SmtpMailerError)
 }
 
 // region:    --- From
+
+impl From<async_mailer::mail_send::Error> for Error {
+    fn from(value: async_mailer::mail_send::Error) -> Self {
+        Error::EmailSendFailed(value)
+    }
+}
+
+impl From<SmtpMailerError> for Error {
+    fn from(value: SmtpMailerError) -> Self {
+        Error::SMTPFailed(value)
+    }
+}
 
 impl From<dotenvy::Error> for Error {
     fn from(err: dotenvy::Error) -> Error {
