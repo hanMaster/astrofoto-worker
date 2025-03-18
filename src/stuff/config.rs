@@ -23,6 +23,7 @@ pub struct Config {
     pub START_COUNTER: u64,
     // -- Mailer
     pub SMTP_SERVER: String,
+    pub SMTP_PORT: u16,
     pub SENDER_EMAIL: String,
     pub SENDER_PASS: String,
     pub RECEIVER_EMAIL: String,
@@ -36,6 +37,7 @@ impl Config {
             WORK_DIR: get_env("WORK_DIR")?,
             START_COUNTER: get_env_as_parse("START_COUNTER")?,
             SMTP_SERVER: get_env("SMTP_SERVER")?,
+            SMTP_PORT: get_env_as_parse("SMTP_PORT")?,
             SENDER_EMAIL: get_env("SENDER_EMAIL")?,
             SENDER_PASS: get_env("SENDER_PASS")?,
             RECEIVER_EMAIL: get_env("RECEIVER_EMAIL")?,

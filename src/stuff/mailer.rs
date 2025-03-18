@@ -6,7 +6,7 @@ pub async fn send_email(mail: String) -> Result<()> {
     println!("Sending email");
     let mailer: SmtpMailer = SmtpMailer::new(
         config().SMTP_SERVER.clone(),
-        465,
+        config().SMTP_PORT,
         async_mailer::SmtpInvalidCertsPolicy::Deny,
         config().SENDER_EMAIL.clone(),
         async_mailer::SecretString::from(config().SENDER_PASS.clone()),
@@ -14,7 +14,7 @@ pub async fn send_email(mail: String) -> Result<()> {
 
     let message = async_mailer::MessageBuilder::new()
         .from(("From Astrafoto-worker", config().SENDER_EMAIL.as_str()))
-        .to(config().RECEIVER_EMAIL.clone())
+        .to(config().RECEIVER_EMAIL.as_str())
         .subject("Новый заказ")
         .text_body(mail)
         .into_message()?;
