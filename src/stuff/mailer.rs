@@ -1,19 +1,20 @@
 use async_mailer::{IntoMessage, Mailer, SmtpMailer};
 use crate::Result;
+use crate::stuff::config::config;
 
-pub async fn send_email(mail: String)-> Result<()> {
+pub async fn send_email(mail: String) -> Result<()> {
     println!("Sending email");
     let mailer: SmtpMailer = SmtpMailer::new(
-        "smtp.yandex.ru".into(),
+        config().SMTP_SERVER.clone(),
         465,
         async_mailer::SmtpInvalidCertsPolicy::Deny,
-        "<account>".into(),
-        async_mailer::SecretString::from("")
+        config().SENDER_EMAIL.clone(),
+        async_mailer::SecretString::from(config().SENDER_PASS.clone()),
     );
 
     let message = async_mailer::MessageBuilder::new()
-        .from(("From Astrafoto-worker", "<email>"))
-        .to("<email>")
+        .from(("From Astrafoto-worker", config().SENDER_EMAIL.as_str()))
+        .to(config().RECEIVER_EMAIL.clone())
         .subject("Новый заказ")
         .text_body(mail)
         .into_message()?;
