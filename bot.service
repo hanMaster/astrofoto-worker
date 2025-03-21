@@ -1,0 +1,12 @@
+[Unit]
+After=network.target
+
+[Service]
+Type=simple
+User=username
+WorkingDirectory=/path-with-env-file
+ExecStart=/path-to-bot/bot
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
