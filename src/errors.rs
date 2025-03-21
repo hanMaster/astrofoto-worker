@@ -1,6 +1,7 @@
 use std::fmt::{Display, Formatter};
 use async_mailer::SmtpMailerError;
 use axum::response::{IntoResponse, Response};
+use log::error;
 
 pub type Result<T> = std::result::Result<T, Error>;
 
@@ -61,6 +62,7 @@ impl std::error::Error for Error {}
 
 impl IntoResponse for Error {
     fn into_response(self) -> Response {
+        error!("{:?}", self);
         self.to_string().into_response()
     }
 }

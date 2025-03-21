@@ -2,20 +2,21 @@ use crate::stuff::config::config;
 use crate::stuff::order::Order;
 use crate::Result;
 use async_mailer::{IntoMessage, Mailer, SmtpMailer};
+use log::info;
 
 pub struct Email {
     order: Order,
-    dir: String,
+    order_id: String,
 }
 
 impl Email {
-    pub fn new(order: Order, dir: String) -> Self {
-        Self { order, dir }
+    pub fn new(order: Order, order_id: String) -> Self {
+        Self { order, order_id }
     }
 
     pub async fn send(&mut self) -> Result<()> {
         let mail = self.prepare_email_content();
-        println!("Sending email");
+        info!("Sending email with {}", self.order_id);
         let mailer: SmtpMailer = SmtpMailer::new(
             config().SMTP_SERVER.clone(),
             config().SMTP_PORT,
@@ -32,10 +33,10 @@ impl Email {
             .into_message()?;
 
         mailer.send_mail(message).await?;
+        info!("Email sent with {}", self.order_id);
         Ok(())
     }
     fn prepare_email_content(&mut self) -> String {
-        let order_id = self.dir.split('/').last().unwrap_or("Ошибка получения ID заказа");
         let cnt = self.order.files.len() as f32;
         let parts = self.order.paper_size.split(' ').collect::<Vec<_>>();
         let size = parts.first().unwrap_or(&"");
@@ -71,7 +72,7 @@ impl Email {
     </body>
 </html>
         "#,
-            order_id,
+            self.order_id,
             self.order.phone,
             self.order.name,
             size,
@@ -95,7 +96,7 @@ mod test {
             paper_size: "10x15 - 32руб".to_string(),
             files: vec!["123".to_string(), "456".to_string(), "789".to_string()],
         };
-        let mut mailer = Email::new(order, "/orders/WA-18032025-1000".to_string());
+        let mut mailer = Email::new(order, "WA-18032025-1000".to_string());
         let res = mailer.send().await;
         match res {
             Ok(_) => println!("Sent email"),
