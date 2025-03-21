@@ -1,12 +1,12 @@
-use std::path::Path;
+use crate::stuff::mailer::Email;
+use crate::stuff::state::AppState;
 use chrono::Local;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
+use std::path::Path;
 use tokio::fs;
 use tokio::fs::File;
 use tokio::io::AsyncWriteExt;
-use crate::stuff::mailer::send_email;
-use crate::stuff::state::AppState;
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct Order {
@@ -19,8 +19,10 @@ pub struct Order {
 
 pub async fn save_order(state: AppState, order: Order) -> crate::Result<()> {
     let date = Local::now().format("%d%m%Y").to_string();
-    let cnt = state.counter.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-    let work_dir_str = format!("{}/WA-{}-{}", state.work_dir , date, cnt);
+    let cnt = state
+        .counter
+        .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+    let work_dir_str = format!("{}/WA-{}-{}", state.work_dir, date, cnt);
     let work_dir = Path::new(&work_dir_str);
     fs::create_dir(work_dir).await?;
     let mut file = File::create_new(format!("{}/order.txt", work_dir.display())).await?;
@@ -33,14 +35,14 @@ pub async fn save_order(state: AppState, order: Order) -> crate::Result<()> {
     file.write_all(payload.as_bytes()).await?;
     file.sync_all().await?;
 
-    tokio::spawn(download_files(order.files, work_dir_str));
+    tokio::spawn(download_files(order, work_dir_str));
 
     Ok(())
 }
 
-async fn download_files(files: Vec<String>, dir: String) -> crate::Result<()> {
-    for file_url in files {
-        let f = Client::new().get(&file_url).send().await?.bytes().await?;
+async fn download_files(order: Order, dir: String) -> crate::Result<()> {
+    for file_url in &order.files {
+        let f = Client::new().get(file_url).send().await?.bytes().await?;
 
         let f_name = file_url.split('/').last().unwrap();
 
@@ -49,12 +51,11 @@ async fn download_files(files: Vec<String>, dir: String) -> crate::Result<()> {
         file.sync_all().await?;
     }
     println!("All files saved to {}", dir);
-    let res = send_email("Тестовое письмо".to_string()).await;
-    match res {
-        Ok(_) => {}
-        Err(e) => {
-            eprintln!("Error sending email: {}", e);
-        }
-    }
+
+    let mut mailer = Email::new(order, dir);
+    mailer
+        .send()
+        .await
+        .unwrap_or_else(|e| eprintln!("Error sending email: {}", e));
     Ok(())
 }
