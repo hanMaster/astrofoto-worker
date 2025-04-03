@@ -57,7 +57,7 @@ pub async fn save_order(state: AppState, order: Order) -> crate::Result<()> {
     .await?;
 
     let payload = format!(
-        "Телефон: {:1}{}\nИмя: {:5}{}\nБумага: {:2}{}\nРазмер: {:2}{}\nКоличество:  {}шт\n\nИтого: {}рублей",
+        "Телефон: {:1}{}\nИмя: {:5}{}\nБумага: {:2}{}\nРазмер: {:2}{}\nКоличество:  {} шт\n\nИтого: {}руб.",
         "",
         order.phone,
         "",
