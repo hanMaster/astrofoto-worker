@@ -15,6 +15,7 @@ pub struct Order {
     pub name: String,
     pub paper_type: String,
     pub paper_size: String,
+    pub price: i32,
     pub files: Vec<String>,
 }
 
@@ -25,14 +26,48 @@ pub async fn save_order(state: AppState, order: Order) -> crate::Result<()> {
         .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
     let order_id = format!("WA-{}-{}", date, cnt);
     info!("New order {} received\n{:#?}", order_id, order);
-    let work_dir_str = format!("{}/{}", state.work_dir, order_id);
-    let work_dir = Path::new(&work_dir_str);
-    fs::create_dir(work_dir).await?;
-    let mut file = File::create_new(format!("{}/order.txt", work_dir.display())).await?;
+    let mut work_dir_str = format!("{}/{}", state.work_dir, order_id);
+    let mut work_dir = Path::new(&work_dir_str);
+    match fs::create_dir(work_dir).await {
+        Ok(_) => {}
+        Err(e) => {
+            error!("Error creating dir: {}", e);
+            if e.kind() != std::io::ErrorKind::AlreadyExists {
+                return Err(e.into());
+            } else {
+                work_dir_str = format!("{}/{}_1", state.work_dir, order_id);
+                work_dir = Path::new(&work_dir_str);
+                let res = fs::create_dir(work_dir).await;
+                if let Err(e) = res {
+                    error!("Error creating dir: {}", e);
+                }
+            }
+        }
+    }
+
+    let cnt = order.files.len() as i32;
+
+    let mut file = File::create_new(format!(
+        "{}/_{cnt}шт_{}_{}_{}руб.txt",
+        work_dir.display(),
+        order.paper_size,
+        order.paper_type,
+        cnt * order.price
+    ))
+    .await?;
 
     let payload = format!(
-        "Телефон: {:1}{}\nИмя: {:5}{}\nБумага: {:2}{}\nРазмер: {:2}{}",
-        "", order.phone, "", order.name, "", order.paper_type, "", order.paper_size
+        "Телефон: {:1}{}\nИмя: {:5}{}\nБумага: {:2}{}\nРазмер: {:2}{}\nКоличество:  {}шт\n\nИтого: {}рублей",
+        "",
+        order.phone,
+        "",
+        order.name,
+        "",
+        order.paper_type,
+        "",
+        order.paper_size,
+        cnt,
+        cnt * order.price
     );
 
     file.write_all(payload.as_bytes()).await?;

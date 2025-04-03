@@ -37,17 +37,7 @@ impl Email {
         Ok(())
     }
     fn prepare_email_content(&mut self) -> String {
-        let cnt = self.order.files.len() as f32;
-        let parts = self.order.paper_size.split(' ').collect::<Vec<_>>();
-        let size = parts.first().unwrap_or(&"");
-        let price = parts
-            .last()
-            .unwrap_or(&"")
-            .chars()
-            .filter(|c| c.is_digit(10))
-            .collect::<String>()
-            .parse::<f32>()
-            .unwrap_or(0.0);
+        let cnt = self.order.files.len() as i32;
 
         format!(
             r#"
@@ -75,11 +65,11 @@ impl Email {
             self.order_id,
             self.order.phone,
             self.order.name,
-            size,
+            self.order.paper_size,
             self.order.paper_type,
             cnt,
-            price,
-            cnt * price,
+            self.order.price,
+            cnt * self.order.price,
         )
     }
 }
@@ -94,6 +84,7 @@ mod test {
             name: "Иван".to_string(),
             paper_type: "глянцевая".to_string(),
             paper_size: "10x15 - 32руб".to_string(),
+            price: 15,
             files: vec!["123".to_string(), "456".to_string(), "789".to_string()],
         };
         let mut mailer = Email::new(order, "WA-18032025-1000".to_string());
