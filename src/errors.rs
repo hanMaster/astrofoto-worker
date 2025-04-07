@@ -1,5 +1,6 @@
 use std::fmt::{Display, Formatter};
 use async_mailer::SmtpMailerError;
+use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use log::error;
 
@@ -63,6 +64,7 @@ impl std::error::Error for Error {}
 impl IntoResponse for Error {
     fn into_response(self) -> Response {
         error!("{:?}", self);
-        self.to_string().into_response()
+        let body = self.to_string();
+        (StatusCode::INTERNAL_SERVER_ERROR, body).into_response()
     }
 }

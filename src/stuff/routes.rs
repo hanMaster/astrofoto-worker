@@ -4,6 +4,7 @@ use axum::extract::State;
 use axum::response::IntoResponse;
 use axum::routing::{get, post};
 use axum::{Json, Router};
+use reqwest::StatusCode;
 
 pub fn get_router(state: AppState) -> Router {
     Router::new()
@@ -19,6 +20,7 @@ async fn handle_order(
     State(state): State<AppState>,
     Json(order): Json<Order>,
 ) -> crate::Result<impl IntoResponse> {
-    save_order(state, order).await?;
-    Ok("Order saved!")
+    let order_id = save_order(state, order).await?;
+    let res = (StatusCode::CREATED, Json(order_id)).into_response();
+    Ok(res)
 }

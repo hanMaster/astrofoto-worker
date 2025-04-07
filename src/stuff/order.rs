@@ -19,7 +19,7 @@ pub struct Order {
     pub files: Vec<String>,
 }
 
-pub async fn save_order(state: AppState, order: Order) -> crate::Result<()> {
+pub async fn save_order(state: AppState, order: Order) -> crate::Result<String> {
     let date = Local::now().format("%d%m%Y").to_string();
     let cnt = state
         .counter
@@ -73,12 +73,15 @@ pub async fn save_order(state: AppState, order: Order) -> crate::Result<()> {
     file.write_all(payload.as_bytes()).await?;
     file.sync_all().await?;
 
-    tokio::spawn(download_files(order, work_dir_str, order_id));
+    download_files(order.clone(), work_dir_str).await?;
 
-    Ok(())
+    let mut mailer = Email::new(order, order_id.clone());
+    mailer.send().await?;
+
+    Ok(order_id)
 }
 
-async fn download_files(order: Order, dir: String, order_id: String) -> crate::Result<()> {
+async fn download_files(order: Order, dir: String) -> crate::Result<()> {
     for file_url in &order.files {
         let f = Client::new().get(file_url).send().await?.bytes().await?;
 
@@ -89,11 +92,5 @@ async fn download_files(order: Order, dir: String, order_id: String) -> crate::R
         file.sync_all().await?;
     }
     info!("All files saved to {}", dir);
-
-    let mut mailer = Email::new(order, order_id.clone());
-    mailer
-        .send()
-        .await
-        .unwrap_or_else(|e| error!("Error sending email for {}: {}", order_id, e));
     Ok(())
 }
