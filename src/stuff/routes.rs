@@ -21,6 +21,6 @@ async fn handle_order(
     Json(order): Json<Order>,
 ) -> crate::Result<impl IntoResponse> {
     let order_id = save_order(state, order).await?;
-    let res = (StatusCode::CREATED, Json(order_id)).into_response();
+    let res = (StatusCode::CREATED, order_id).into_response();
     Ok(res)
 }
