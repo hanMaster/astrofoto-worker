@@ -36,6 +36,14 @@ impl Email {
         Ok(())
     }
 
+    pub async fn send_state(&self, state: String) -> Result<()> {
+        info!("Sending email with state {}", state);
+        let content = self.prepare_state_content(state);
+        self.send("Состояние инстанса WhatsApp", content).await?;
+        info!("Email sent");
+        Ok(())
+    }
+
     fn prepare_new_order_content(&self, order: Order, order_id: String) -> String {
         let cnt = order.files.len() as i32;
 
@@ -72,6 +80,27 @@ impl Email {
             cnt * order.price,
         )
     }
+
+    fn prepare_state_content(&self, state: String) -> String {
+        format!(
+            r#"
+        <!DOCTYPE html>
+<html lang="ru">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title></title>
+    </head>
+    <body style="font-family: sans-serif">
+        <h2>
+            Получено новое состояние WhatsApp инстанса: {}
+        </h2>
+    </body>
+</html>
+        "#,
+            state
+        )
+    }
 }
 
 #[cfg(test)]
@@ -89,6 +118,18 @@ mod test {
         };
         let res = Email
             .send_new_order(order, "WA-18032025-1000".to_string())
+            .await;
+        match res {
+            Ok(_) => println!("Sent email"),
+            Err(ref e) => println!("Error sending email: {}", e),
+        }
+        assert!(res.is_ok());
+    }
+    #[tokio::test]
+    async fn send_state_test() {
+        let state = "Active".to_string();
+        let res = Email
+            .send_state(state)
             .await;
         match res {
             Ok(_) => println!("Sent email"),
