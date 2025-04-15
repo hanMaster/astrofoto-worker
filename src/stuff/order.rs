@@ -8,6 +8,7 @@ use std::path::Path;
 use tokio::fs;
 use tokio::fs::File;
 use tokio::io::AsyncWriteExt;
+use uuid::Uuid;
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct Order {
@@ -85,9 +86,9 @@ async fn download_files(order: Order, dir: String) -> crate::Result<()> {
     for file_url in &order.files {
         let f = Client::new().get(file_url).send().await?.bytes().await?;
 
-        let f_name = file_url.split('/').last().unwrap();
+        let file_extension = file_url.split('.').last().unwrap();
 
-        let mut file = File::create_new(format!("{}/{}", dir, f_name)).await?;
+        let mut file = File::create_new(format!("{}/{}.{}", dir, Uuid::new_v4(), file_extension)).await?;
         file.write_all(&f).await?;
         file.sync_all().await?;
     }
