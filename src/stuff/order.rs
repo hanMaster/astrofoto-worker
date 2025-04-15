@@ -76,8 +76,7 @@ pub async fn save_order(state: AppState, order: Order) -> crate::Result<String> 
 
     download_files(order.clone(), work_dir_str).await?;
 
-    let mut mailer = Email::new(order, order_id.clone());
-    mailer.send().await?;
+    Email.send_new_order(order, order_id.clone()).await?;
 
     Ok(order_id)
 }

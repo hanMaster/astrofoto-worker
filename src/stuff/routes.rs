@@ -8,11 +8,11 @@ use reqwest::StatusCode;
 
 pub fn get_router(state: AppState) -> Router {
     Router::new()
-        .route("/", get(handle_root))
+        .route("/state", get(handle_state))
         .route("/order", post(handle_order))
         .with_state(state)
 }
-async fn handle_root() -> impl IntoResponse {
+async fn handle_state() -> impl IntoResponse {
     "Server running".into_response()
 }
 

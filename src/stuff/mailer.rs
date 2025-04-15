@@ -1,22 +1,14 @@
+use crate::Result;
 use crate::stuff::config::config;
 use crate::stuff::order::Order;
-use crate::Result;
 use async_mailer::{IntoMessage, Mailer, SmtpMailer};
 use log::info;
 
-pub struct Email {
-    order: Order,
-    order_id: String,
-}
+#[derive(Default)]
+pub struct Email;
 
 impl Email {
-    pub fn new(order: Order, order_id: String) -> Self {
-        Self { order, order_id }
-    }
-
-    pub async fn send(&mut self) -> Result<()> {
-        let mail = self.prepare_email_content();
-        info!("Sending email with {}", self.order_id);
+    pub async fn send(&self, subject: &str, content: String) -> Result<()> {
         let mailer: SmtpMailer = SmtpMailer::new(
             config().SMTP_SERVER.clone(),
             config().SMTP_PORT,
@@ -28,16 +20,24 @@ impl Email {
         let message = async_mailer::MessageBuilder::new()
             .from(("From Astrafoto-worker", config().SENDER_EMAIL.as_str()))
             .to(config().RECEIVER_EMAIL.as_str())
-            .subject("Новый заказ")
-            .html_body(mail)
+            .subject(subject)
+            .html_body(content)
             .into_message()?;
 
         mailer.send_mail(message).await?;
-        info!("Email sent with {}", self.order_id);
         Ok(())
     }
-    fn prepare_email_content(&mut self) -> String {
-        let cnt = self.order.files.len() as i32;
+
+    pub async fn send_new_order(&self, order: Order, order_id: String) -> Result<()> {
+        info!("Sending email with {}", order_id);
+        let content = self.prepare_new_order_content(order, order_id.clone());
+        self.send("Новый заказ", content).await?;
+        info!("Email sent with {}", order_id);
+        Ok(())
+    }
+
+    fn prepare_new_order_content(&self, order: Order, order_id: String) -> String {
+        let cnt = order.files.len() as i32;
 
         format!(
             r#"
@@ -62,14 +62,14 @@ impl Email {
     </body>
 </html>
         "#,
-            self.order_id,
-            self.order.phone,
-            self.order.name,
-            self.order.paper_size,
-            self.order.paper_type,
+            order_id,
+            order.phone,
+            order.name,
+            order.paper_size,
+            order.paper_type,
             cnt,
-            self.order.price,
-            cnt * self.order.price,
+            order.price,
+            cnt * order.price,
         )
     }
 }
@@ -87,8 +87,9 @@ mod test {
             price: 15,
             files: vec!["123".to_string(), "456".to_string(), "789".to_string()],
         };
-        let mut mailer = Email::new(order, "WA-18032025-1000".to_string());
-        let res = mailer.send().await;
+        let res = Email
+            .send_new_order(order, "WA-18032025-1000".to_string())
+            .await;
         match res {
             Ok(_) => println!("Sent email"),
             Err(ref e) => println!("Error sending email: {}", e),
